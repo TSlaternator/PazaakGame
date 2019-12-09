@@ -1,0 +1,8 @@
+Version 0.1.0 (Initial Commit):
+
+~~~ The goal of the game is to draw cards (with values 1 - 10) to get a total as higher than your oponent, without exceeding 20. Players take turns drawing a card and choosing whether to hold their current total, or carry on drawing ~~~
+
+- A deck of cards will shuffle at the start of the game
+- Player and AI can draw cards from the deck, and choose to hold, or carry on (starting the other players turn)
+- Basic AI added, which will choose to hold at advantageous times
+- Currently can only play one round, and a console message will be written when the player wins, loses or draws
