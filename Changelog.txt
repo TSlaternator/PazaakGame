@@ -1,3 +1,13 @@
+Version 0.2.0: (Playable Cards)
+
+ - Added special playable cards, ranging from +6 to -6, allowing players to change their current total
+ - Players can play up to one card from their hand per go
+ - Players draw a hand of 4 special cards at the start of the game, and never draw more
+ - One type of card can be either a negative or positive value, making them even more useful
+ - Added a button to allow the player to change the sign on their special cards from + to - or vice versa
+ - The AI currently draws a hand of special cards, but has no ability to play them yet (will add next update)
+
+
 Version 0.1.0 (Initial Commit):
 
 ~~~ The goal of the game is to draw cards (with values 1 - 10) to get a total as higher than your oponent, without exceeding 20. Players take turns drawing a card and choosing whether to hold their current total, or carry on drawing ~~~
