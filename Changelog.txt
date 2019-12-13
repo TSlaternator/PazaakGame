@@ -1,3 +1,8 @@
+Versopm 0.3.0: (AI Playable Cards)
+
+ - Improved AI to allow it to play cards
+ - AI threshold for holding now changes based on the amount of cards in its hand, and the players
+
 Version 0.2.0: (Playable Cards)
 
  - Added special playable cards, ranging from +6 to -6, allowing players to change their current total

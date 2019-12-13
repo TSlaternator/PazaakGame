@@ -13,4 +13,10 @@ public interface ICardController
 
     //returns the object this card would play
     GameObject getPlayedCard(bool isPlayed);
+
+    //returns whether this is a switch card or not
+    bool IsSwitch();
+
+    //returns the value of the card
+    int getValue();
 }

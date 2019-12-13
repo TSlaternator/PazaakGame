@@ -27,6 +27,9 @@ public class GameController : MonoBehaviour
 
     private bool cardPlayed; //true if the player has played a card this turn
 
+    private int aiHoldThreshold; //the threshold the AI will hold cards at when the player is not holding
+    private int aiDrawThreshold; //the threshold the AI will hold cards at to draw with a holding player
+
     // Initialises the game
     void Start() {
         //initialising cards
@@ -82,15 +85,115 @@ public class GameController : MonoBehaviour
 
     //Simulates the AI
     private void SimulateAI() {
-        //if the AI's score is under 21 still
-        if (!CheckTotals()) {
-            if (aiTotal >= 18 && aiTotal >= playerTotal) AIHold(); //AI will choose to hold if near 20 and ahead/equal to the player
-            else if (playerHolding)
-            {
-                if (aiTotal == playerTotal && aiTotal > 16) AIHold(); //AI will hold if tied and likely to exceed 20 on next draw
-                else if (aiTotal > playerTotal) AIHold(); //AI will hold if the player is holding, and the AI has a better score
+         CalculateAIThresholds(); //calculating thresholds for AI decision
+         ICardController[] aiHand = aiHandUI.GetComponentsInChildren<ICardController>();
+         Debug.Log("HANDSIZE1: " + aiHand.Length);
+         if (aiTotal >= aiHoldThreshold && aiTotal >= playerTotal && aiTotal <= 20) AIHold(); //AI will choose to hold if near 20 and ahead/equal to the player
+         else if (playerHolding) {
+             if (aiTotal > playerTotal && aiTotal <= 20) AIHold(); //AI will hold if the player is holding, and the AI has a better score
+             else if (aiTotal == playerTotal && aiTotal > aiDrawThreshold) AIHold(); //AI will hold if tied and likely to exceed 20 on next draw
+             else { //will try to win/draw by playing cards in hand
+                 int bestChoice = AICalculateChoices(aiHand); //calculating if theres a good card to play
+                 if (bestChoice > -1) {
+                     Debug.Log("PLAYING CARD");
+                     AIPlayCard(aiHand[bestChoice]); //if a good card to play is found... play it!
+                     Destroy(aiHandUI.GetComponent<Transform>().GetChild(bestChoice).gameObject);
+                     AIHold();
+                 }
+             }
+         } else { //will play a card if one would help
+             int bestChoice = AICalculateChoices(aiHand); //calculating if theres a good card to play
+             if (bestChoice > -1) {
+                 Debug.Log("PLAYING CARD");
+                 AIPlayCard(aiHand[bestChoice]); //if a good card to play is found... play it!
+                 Destroy(aiHandUI.GetComponent<Transform>().GetChild(bestChoice).gameObject);
+                 AIHold();
+             }
+         }
+    }
+
+    //Calculates which card in the AIs hand would be the best play
+    private int AICalculateChoices(ICardController[] hand) {
+        int bestChoice = -1; //value of -1 shows no decent choice was found, otherwise value will be the array index of the best card to play
+        int bestTotal;
+        if (aiTotal <= 20) bestTotal = aiTotal;
+        else bestTotal = 0;
+        int currentTotal;
+        Debug.Log("HANDSIZE: " + hand.Length);
+        for (int i = 0; i < hand.Length; i++) {
+            ICardController currentChoice = hand[i];
+            if (currentChoice.IsSwitch()) {
+
+                bool switchBack = true;
+                //Testing value of original card sign
+                currentTotal = aiTotal + currentChoice.getValue(); //the total if this card were played
+                if (currentTotal > bestTotal && currentTotal <= 20) { //if playing this card would be the best option so far:
+                    if (playerHolding) {
+                        if (currentTotal > playerTotal) { //if playing this card would win this round:
+                            bestTotal = currentTotal;
+                            bestChoice = i;
+                        } else if (currentTotal == playerTotal && currentTotal > aiDrawThreshold) { //if playing this card would draw this round:
+                            bestTotal = currentTotal;
+                            bestChoice = i;
+                        }
+                    } else if (currentTotal >= aiHoldThreshold && currentTotal >= playerTotal) {
+                        bestTotal = currentTotal;
+                        bestChoice = i;
+                    }
+                }
+
+                currentChoice.OnSwitch(); //switching card sign and testing value of new sign
+                currentTotal = aiTotal + currentChoice.getValue(); //the total if this card were played
+                if (currentTotal > bestTotal && currentTotal <= 20) { //if playing this card would be the best option so far:
+                    if (playerHolding) {
+                        if (currentTotal > playerTotal) { //if playing this card would win this round:
+                            bestTotal = currentTotal;
+                            bestChoice = i;
+                            switchBack = false;
+                        } else if (currentTotal == playerTotal && currentTotal > aiDrawThreshold) { //if playing this card would draw this round:
+                            bestTotal = currentTotal;
+                            bestChoice = i;
+                            switchBack = false;
+                        }
+                    } else if (currentTotal >= aiHoldThreshold && currentTotal >= playerTotal) {
+                        bestTotal = currentTotal;
+                        bestChoice = i;
+                        switchBack = false;
+                    }
+                }
+
+                if (switchBack) currentChoice.OnSwitch(); //if the first sign was better, switch the card back
+
+            } else {
+                currentTotal = aiTotal + currentChoice.getValue(); //the total if this card were played
+                if (currentTotal > bestTotal && currentTotal <= 20) { //if playing this card would be the best option so far:
+                    if (playerHolding) {
+                        if (currentTotal > playerTotal) { //if playing this card would win this round:
+                            bestTotal = currentTotal;
+                            bestChoice = i;
+                        } else if (currentTotal == playerTotal && currentTotal > aiDrawThreshold) { //if playing this card would draw this round:
+                            bestTotal = currentTotal;
+                            bestChoice = i;
+                        }
+                    } else if (currentTotal >= aiHoldThreshold && currentTotal >= playerTotal) {
+                        bestTotal = currentTotal;
+                        bestChoice = i;
+                    }
+                }
             }
+            Debug.Log("BEST TOTAL: " + bestTotal + ", CURRENT TOTAL: " + currentTotal);
         }
+        Debug.Log("BEST CHOICE: " + bestChoice);
+        return bestChoice;
+    }
+
+    //calculates the holding thresholds for the AIs decision making
+    private void CalculateAIThresholds() {
+        //AI Threshold increases based on the number of cards in it's hand, and it's opponents hand
+        aiHoldThreshold = (int)(17 + ((float) aiHandUI.GetComponent<Transform>().childCount / 2f) 
+            + ((float) playerHandUI.GetComponent<Transform>().childCount / 4f));
+        aiDrawThreshold = aiHoldThreshold - 2; //formula will be changed once multiple rounds are introduced
+        Debug.Log("AI THRESHOLDS: " + aiHoldThreshold + " / " + aiDrawThreshold);
     }
 
     //will cause the AI to hold, locking in their current total
@@ -210,6 +313,15 @@ public class GameController : MonoBehaviour
         Instantiate(playedCard, playerPlayArea.transform);
         playerTotal = GetTotal(playerCards);
         playerTotalText.text = "Total: " + playerTotal;
+    }
+
+    //called by the AI when playing a card
+    private void AIPlayCard(ICardController card) {
+        GameObject playedCard = card.getPlayedCard(true);
+        aiCards.Add(playedCard);
+        Instantiate(playedCard, aiPlayArea.transform);
+        aiTotal = GetTotal(aiCards);
+        aiTotalText.text = "Total: " + aiTotal;
     }
 
     //swaps the signs on the players applicable +/- cards

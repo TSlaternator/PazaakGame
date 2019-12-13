@@ -33,4 +33,14 @@ public class CardController : MonoBehaviour, ICardController
     public GameObject getPlayedCard(bool isPlayed) {
         return playedCard;
     }
+
+    //returns false, since this is not a switch card
+    public bool IsSwitch() {
+        return false;
+    }
+
+    //returns the value of the card
+    public int getValue() {
+        return value;
+    }
 }

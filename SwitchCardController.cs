@@ -49,4 +49,14 @@ public class SwitchCardController : MonoBehaviour, ICardController
         else if (isPositive) return positiveCard;
         else return negativeCard;
     }
+
+    //returns true, since this is a switch card
+    public bool IsSwitch() {
+        return true;
+    }
+
+    //returns the value of the card
+    public int getValue() { 
+        return value;
+    }
 }
