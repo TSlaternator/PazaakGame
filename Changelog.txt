@@ -1,7 +1,18 @@
-Versopm 0.3.0: (AI Playable Cards)
+Version 0.4.0: (Multiple Sets)
+
+ - The game is now played over multiple sets
+ - Each set involves the players drawing cards until they decide to hold, or exceed 20 points
+ - The winner of each set is determined as previous
+ - Special hand cards are retained between sets, and none are drawn after the original 4
+    - this means using them strateigically is important
+ - The winner is the first person to win 3 sets
+
+
+Version 0.3.0: (AI Playable Cards)
 
  - Improved AI to allow it to play cards
  - AI threshold for holding now changes based on the amount of cards in its hand, and the players
+
 
 Version 0.2.0: (Playable Cards)
 
