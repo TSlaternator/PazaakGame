@@ -37,6 +37,9 @@ public class GameController : MonoBehaviour
 
     private bool playerFirst; //if true, the player draws first this round, if false, the AI draws first
 
+    [SerializeField] private AudioSource cardPlay; //audio to play when a card is drawn/played
+    [SerializeField] private AudioSource roundOver; //audio to play when a round is over
+
     // Initialises the game
     void Start() {
         //initialising cards
@@ -234,8 +237,8 @@ public class GameController : MonoBehaviour
                 return true;
             }
         } else {
-            if (playerTotal > aiTotal) playerScoreUI[playerScore++].SetActive(true);
-            else if (aiTotal > playerTotal) aiScoreUI[aiScore++].SetActive(true);
+            if (playerTotal > aiTotal && playerTotal < 21) playerScoreUI[playerScore++].SetActive(true);
+            else if (aiTotal > playerTotal && aiTotal < 21) aiScoreUI[aiScore++].SetActive(true);
             else Debug.Log("DRAW");
             return true;
         }
@@ -245,6 +248,7 @@ public class GameController : MonoBehaviour
     //called when a round ends
     private IEnumerator RoundOver() {
         Debug.Log("ROUND OVER");
+        roundOver.Play();
 
         yield return new WaitForSeconds(5f);
 
@@ -329,6 +333,7 @@ public class GameController : MonoBehaviour
     //draws a card for the player (if isPlayer is true) or the ai (if false)
     private void DrawCard(bool isPlayer) {
         GameObject drawnCard = deck[0];
+        cardPlay.Play();
         deck.RemoveAt(0); //removes the top card from the deck
         if (isPlayer) {
             playerCards.Add(drawnCard);
@@ -357,6 +362,7 @@ public class GameController : MonoBehaviour
 
     //called by cards in the players hand when played
     public void PlayCard(GameObject card) {
+        cardPlay.Play();
         cardPlayed = true;
         GameObject playedCard = card.GetComponent<ICardController>().getPlayedCard(true);
         playerCards.Add(playedCard);
@@ -367,6 +373,7 @@ public class GameController : MonoBehaviour
 
     //called by the AI when playing a card
     private void AIPlayCard(ICardController card) {
+        cardPlay.Play();
         GameObject playedCard = card.getPlayedCard(true);
         aiCards.Add(playedCard);
         Instantiate(playedCard, aiPlayArea.transform);

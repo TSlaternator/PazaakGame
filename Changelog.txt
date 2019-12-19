@@ -1,3 +1,11 @@
+Version 0.5.0: (Improved UI and Effects)
+
+ - Adding a growing effect on cards in the players hand when they're hovered over
+ - Added a sound effect on cards in the players hand when they're hovered over
+ - Added a sound effect which is played whenever a card is played/drawn
+ - Added a sound effect which is played whenever the round ends
+ - Fixed a bug that could cause the player to win with a total higher than 20
+
 Version 0.4.0: (Multiple Sets)
 
  - The game is now played over multiple sets
