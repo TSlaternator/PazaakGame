@@ -1,3 +1,12 @@
+Version 1.0.0: (Full working version)
+
+ - Added UI popup when a round ends, prompting the player to 'start next round'
+ - Added a UI popup when the game is won, giving the player an option to quit, or restart
+ - Improved all visual aspects of the UI, including giving the cards new sprites
+ - Disabled 'END TURN' and 'HOLD' buttons when not the player's turn
+ - Fixed a bug that caused a tie if the player pressed 'HOLD' if over 20 points
+ - Capped the amount of playable cards in a round to 9 per player (will automatically 'HOLD' if 9 is reached)
+
 Version 0.5.0: (Improved UI and Effects)
 
  - Adding a growing effect on cards in the players hand when they're hovered over

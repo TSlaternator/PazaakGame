@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour
 {
@@ -15,6 +16,11 @@ public class GameController : MonoBehaviour
     [SerializeField] private Text aiTotalText; //shows the ais total for the current round
     [SerializeField] private GameObject[] playerScoreUI; //lights that turn on as the player wins rounds
     [SerializeField] private GameObject[] aiScoreUI; //lights that turn on as the AI wins rounds
+    [SerializeField] private GameObject RoundOverUI; //the UI popup for when a round is over
+    [SerializeField] private Text RoundOverText; //the UI text for when a round is over
+    [SerializeField] private GameObject GameOverUI; //the UI popup for when the game is won
+    [SerializeField] private Text GameOverText; //the UI text for when the game is won
+    [SerializeField] private Button[] buttons; //holds the Buttons the player can press
 
     private List<GameObject> deck; //the current deck of cards, this is 'shuffled' before each round
     private List<GameObject> playableDeck; //the current playable deck of cards, shuffled and drawn from at the start of the game
@@ -36,6 +42,7 @@ public class GameController : MonoBehaviour
     private int aiScore; //the total rounds the AI has won. If they win 3 first, they win the game
 
     private bool playerFirst; //if true, the player draws first this round, if false, the AI draws first
+    private int roundResult; //if -1: AI won, if 0: Draw, if 1: Player won the round
 
     [SerializeField] private AudioSource cardPlay; //audio to play when a card is drawn/played
     [SerializeField] private AudioSource roundOver; //audio to play when a round is over
@@ -71,6 +78,7 @@ public class GameController : MonoBehaviour
     //simulates the players go
     private void PlayerGo() {
         if (!playerHolding) {
+            ToggleButtons(true);
             DrawCard(true);
             cardPlayed = false;
         }
@@ -80,8 +88,10 @@ public class GameController : MonoBehaviour
     //ends the players go
     public void EndPlayerGo() {
         cardPlayed = true; //stops the player playing cards during the opponents go
+        ToggleButtons(false); //turns buttons off while not the players go
+        if (playerCards.Count == 9) playerHolding = true; //can't play more than 9 cards
         if (!CheckTotals()) StartCoroutine(AIDelay());
-        else StartCoroutine(RoundOver());
+        else RoundOver();
     }
 
     //will cause the player to hold, locking in their current total
@@ -96,7 +106,7 @@ public class GameController : MonoBehaviour
             DrawCard(false);
             SimulateAI();
             if (!CheckTotals()) StartCoroutine(PlayerDelay());
-            else StartCoroutine(RoundOver());
+            else RoundOver();
         }
         else StartCoroutine(PlayerDelay());
     }
@@ -105,7 +115,8 @@ public class GameController : MonoBehaviour
     private void SimulateAI() {
          CalculateAIThresholds(); //calculating thresholds for AI decision
          ICardController[] aiHand = aiHandUI.GetComponentsInChildren<ICardController>();
-         if (aiTotal >= aiHoldThreshold && aiTotal >= playerTotal && aiTotal <= 20) AIHold(); //AI will choose to hold if near 20 and ahead/equal to the player
+         if (aiCards.Count == 9) AIHold(); //can't have more than 9 cards
+         else if (aiTotal >= aiHoldThreshold && aiTotal >= playerTotal && aiTotal <= 20) AIHold(); //AI will choose to hold if near 20 and ahead/equal to the player
          else if (playerHolding) {
              if (aiTotal > playerTotal && aiTotal <= 20) AIHold(); //AI will hold if the player is holding, and the AI has a better score
              else if (aiTotal == playerTotal && aiTotal > aiDrawThreshold) AIHold(); //AI will hold if tied and likely to exceed 20 on next draw
@@ -210,7 +221,6 @@ public class GameController : MonoBehaviour
     //will cause the AI to hold, locking in their current total
     private void AIHold() {
         aiHolding = true;
-        Debug.Log("AI HOLDING...");
     }
 
     //creates a slight delay before the AIs go starts
@@ -230,41 +240,49 @@ public class GameController : MonoBehaviour
         if (!playerHolding || !aiHolding) {
             if (playerTotal > 20) {
                 aiScoreUI[aiScore++].SetActive(true); //increases the AIs score by 1, and turns on a visual representation
+                roundResult = -1;
                 return true;
             }
             else if (aiTotal > 20) {
                 playerScoreUI[playerScore++].SetActive(true); //increases the Players score by 1, and turns on a visual representation
+                roundResult = 1;
                 return true;
             }
         } else {
-            if (playerTotal > aiTotal && playerTotal < 21) playerScoreUI[playerScore++].SetActive(true);
-            else if (aiTotal > playerTotal && aiTotal < 21) aiScoreUI[aiScore++].SetActive(true);
-            else Debug.Log("DRAW");
+            if (playerTotal > 20) {
+                aiScoreUI[aiScore++].SetActive(true);
+                roundResult = -1;
+            } else if (aiTotal > 20) {
+                playerScoreUI[playerScore++].SetActive(true);
+                roundResult = 1;
+            } else if (playerTotal > aiTotal) {
+                playerScoreUI[playerScore++].SetActive(true);
+                roundResult = 1;
+            } else if (aiTotal > playerTotal) {
+                aiScoreUI[aiScore++].SetActive(true);
+                roundResult = -1;
+            }
+            else roundResult = 0;
             return true;
         }
         return false;
     }
 
-    //called when a round ends
-    private IEnumerator RoundOver() {
-        Debug.Log("ROUND OVER");
+    //simulates the end of the round
+    private void RoundOver() {
         roundOver.Play();
-
-        yield return new WaitForSeconds(5f);
 
         //if nobody has won the game (won 3 rounds) then start a new round
         if (aiScore < 3 && playerScore < 3) {
-            ResetCards();
-            if (playerFirst) {
-                playerFirst = false;
-                AIGo();
-            } else {
-                playerFirst = true;
-                PlayerGo();
-            }
+            RoundOverUI.SetActive(true);
+            if (roundResult == 1) RoundOverText.text = "WINNER: PLAYER (" + playerTotal + " - " + aiTotal + ")";
+            else if (roundResult == 0) RoundOverText.text = "ROUND DRAW (" + playerTotal + " - " + aiTotal + ")";
+            else RoundOverText.text = "WINNER: OPPONENT (" + aiTotal + " - " + playerTotal + ")";
+                    
         } else {
-            if (aiScore == 3) Debug.Log("AI WINS! Score: " + aiScore + " - " + playerScore);
-            else Debug.Log("PLAYER WINS! Score: " + playerScore + " - " + aiScore);
+            GameOverUI.SetActive(true);
+            if (aiScore == 3) GameOverText.text = "WINNER: OPPONENT (" + aiScore + " - " + playerScore + ")";
+            else GameOverText.text = "WINNER: PLAYER (" + playerScore + " - " + aiScore + ")";
         }
     }
 
@@ -339,12 +357,12 @@ public class GameController : MonoBehaviour
             playerCards.Add(drawnCard);
             Instantiate(drawnCard, playerPlayArea.transform);
             playerTotal = GetTotal(playerCards);
-            playerTotalText.text = "Total: " + playerTotal;
+            playerTotalText.text = "" + playerTotal;
         } else {
             aiCards.Add(drawnCard);
             Instantiate(drawnCard, aiPlayArea.transform);
             aiTotal = GetTotal(aiCards);
-            aiTotalText.text = "Total: " + aiTotal;
+            aiTotalText.text = "" + aiTotal;
         }
     }
 
@@ -368,7 +386,7 @@ public class GameController : MonoBehaviour
         playerCards.Add(playedCard);
         Instantiate(playedCard, playerPlayArea.transform);
         playerTotal = GetTotal(playerCards);
-        playerTotalText.text = "Total: " + playerTotal;
+        playerTotalText.text = "" + playerTotal;
     }
 
     //called by the AI when playing a card
@@ -378,12 +396,40 @@ public class GameController : MonoBehaviour
         aiCards.Add(playedCard);
         Instantiate(playedCard, aiPlayArea.transform);
         aiTotal = GetTotal(aiCards);
-        aiTotalText.text = "Total: " + aiTotal;
+        aiTotalText.text = "" + aiTotal;
     }
 
     //swaps the signs on the players applicable +/- cards
     public void SwapSigns() {
         ICardController[] cards = playerHandUI.GetComponentsInChildren<ICardController>();
         for (int i = 0; i < cards.Length; i++) cards[i].OnSwitch();
+    }
+
+    //disables/enables buttons based on the supplied bool
+    private void ToggleButtons(bool isEnabled) {
+        for (int i = 0; i < buttons.Length; i++) buttons[i].interactable = isEnabled;
+    }
+
+    //starts a new round
+    public void NextRound() {
+        RoundOverUI.SetActive(false);
+        ResetCards();
+        if (playerFirst) {
+            playerFirst = false;
+            AIGo();
+        } else {
+            playerFirst = true;
+            PlayerGo();
+        }
+    }
+
+    //starts a new game
+    public void PlayAgain() {
+        SceneManager.LoadScene("SampleScene", LoadSceneMode.Single);
+    }
+
+    //quits the game
+    public void Quit(){
+        Application.Quit();
     }
 }
